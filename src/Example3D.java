@@ -44,7 +44,7 @@ public class Example3D extends JFrame {
   private static final BoundingSphere SCENE_BOUNDS = new BoundingSphere(new Point3d(), 10000.0);
 
   // radius of the track
-  private static final double TRACK_RADIUS = 75.0;
+  private static final double TRACK_RADIUS = 45.0;
 
   public static void main(String[] args) {
     new Example3D();
@@ -149,7 +149,7 @@ public class Example3D extends JFrame {
   }
 
   private BranchGroup createTrainPiston(final Vector3f pos, final Vector3f size,
-      final Material mat) {
+      final Appearance appearance) {
     BranchGroup piston = new BranchGroup();
 
     // set up piston transform
@@ -157,9 +157,7 @@ public class Example3D extends JFrame {
     pistonTg.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
 
     // piston shape and appearance
-    Appearance pistonApp = new Appearance();
-    pistonApp.setMaterial(mat);
-    Box pistonShape = new Box(size.getX(), size.getY(), size.getZ(), pistonApp);
+    Box pistonShape = new Box(size.getX(), size.getY(), size.getZ(), appearance);
 
     // create translation group for piston and then add piston to anim group
     TransformGroup pistonPosTg = new TransformGroup();
@@ -187,8 +185,8 @@ public class Example3D extends JFrame {
     return piston;
   }
 
-  private BranchGroup createTrainWheel(final Vector3f pos, float radius, final Material outerMat,
-      final Material innerMat) {
+  private BranchGroup createTrainWheel(final Vector3f pos, float radius,
+      final Appearance outerAppearance, final Appearance innerAppearance) {
     BranchGroup wheel = new BranchGroup();
 
     TransformGroup wheelTg = new TransformGroup();
@@ -196,24 +194,18 @@ public class Example3D extends JFrame {
 
     // create transforms for our wheels
     Transform3D wheelTrans = new Transform3D();
+    wheelTrans.rotX(Math.PI * 0.5f);
+    wheelTrans.rotZ(Math.PI * 0.5f);
     wheelTrans.setTranslation(pos);
-    Transform3D wheelRot = new Transform3D();
-    wheelRot.rotX(Math.PI * 0.5f);
-    wheelRot.rotZ(Math.PI * 0.5f);
-    wheelTrans.mul(wheelRot);
 
     // create outer wheel section
-    Appearance wheelOuterApp = new Appearance();
-    wheelOuterApp.setMaterial(outerMat);
     TransformGroup wheelOuterTg = new TransformGroup(wheelTrans);
-    Cylinder wheelOuter = new Cylinder(radius, 0.25f, wheelOuterApp);
+    Cylinder wheelOuter = new Cylinder(radius, 0.25f, outerAppearance);
     wheelOuterTg.addChild(wheelOuter);
 
     // create inner wheel section
-    Appearance wheelInnerApp = new Appearance();
-    wheelInnerApp.setMaterial(innerMat);
     TransformGroup wheelInnerTg = new TransformGroup(wheelTrans);
-    Cylinder wheelInner = new Cylinder(radius * 0.65f, 0.35f, wheelInnerApp);
+    Cylinder wheelInner = new Cylinder(radius * 0.65f, 0.35f, innerAppearance);
     wheelInnerTg.addChild(wheelInner);
 
     // add wheel parts to group
@@ -259,85 +251,71 @@ public class Example3D extends JFrame {
     final Material wheelMetalMat = new Material(new Color3f(0.6f, 0.6f, 0.6f), new Color3f(),
         new Color3f(0.6f, 0.6f, 0.6f), new Color3f(1.0f, 1.0f, 1.0f), 35.0f);
 
+    // train appearances
+    Appearance wheelMetalApp = new Appearance();
+    wheelMetalApp.setMaterial(wheelMetalMat);
+    Appearance windowApp = new Appearance();
+    windowApp.setMaterial(windowMat);
+    Appearance bodyPaintApp = new Appearance();
+    bodyPaintApp.setMaterial(bodyPaintMat);
+    Appearance bodyMetalApp = new Appearance();
+    bodyMetalApp.setMaterial(bodyMetalMat);
+
     // train body
-    Appearance body1App = new Appearance();
-    body1App.setMaterial(bodyPaintMat);
     Transform3D body1Trans = new Transform3D();
+    body1Trans.rotX(Math.PI * 0.5f);
     body1Trans.setTranslation(new Vector3f(0.0f, 0.0f, -0.5f));
-    Transform3D body1Rot = new Transform3D();
-    body1Rot.rotX(Math.PI * 0.5f);
-    body1Trans.mul(body1Rot);
     TransformGroup body1Tg = new TransformGroup(body1Trans);
-    Cylinder body1 = new Cylinder(2.5f, 5.2f, body1App);
+    Cylinder body1 = new Cylinder(2.5f, 5.2f, bodyPaintApp);
     body1Tg.addChild(body1);
 
-    Appearance body2App = new Appearance();
-    body2App.setMaterial(bodyPaintMat);
     Transform3D body2Trans = new Transform3D();
     body2Trans.setTranslation(new Vector3f(0.0f, 1.95f, 4.5f));
     TransformGroup body2Tg = new TransformGroup(body2Trans);
-    Box body2 = new Box(3.5f, 4.0f, 2.0f, body2App);
+    Box body2 = new Box(3.5f, 4.0f, 2.0f, bodyPaintApp);
     body2Tg.addChild(body2);
 
-    Appearance body3App = new Appearance();
-    body3App.setMaterial(bodyMetalMat);
     Transform3D body3Trans = new Transform3D();
     body3Trans.setTranslation(new Vector3f(0.0f, -3.0f, 1.75f));
     TransformGroup body3Tg = new TransformGroup(body3Trans);
-    Box body3 = new Box(3.5f, 1.0f, 4.75f, body3App);
+    Box body3 = new Box(3.5f, 1.0f, 4.75f, bodyMetalApp);
     body3Tg.addChild(body3);
 
-    Appearance body4App = new Appearance();
-    body4App.setMaterial(bodyMetalMat);
     Transform3D body4Trans = new Transform3D();
+    body4Trans.rotX(Math.PI * 0.5f);
     body4Trans.setTranslation(new Vector3f(0.0f, 0.0f, 2.5f));
-    Transform3D body4Rot = new Transform3D();
-    body4Rot.rotX(Math.PI * 0.5f);
-    body4Trans.mul(body4Rot);
     TransformGroup body4Tg = new TransformGroup(body4Trans);
-    Cylinder body4 = new Cylinder(2.75f, 1.0f, body4App);
+    Cylinder body4 = new Cylinder(2.75f, 1.0f, bodyMetalApp);
     body4Tg.addChild(body4);
 
-    Appearance body5App = new Appearance();
-    body5App.setMaterial(bodyMetalMat);
     Transform3D body5Trans = new Transform3D();
+    body5Trans.rotX(Math.PI * 0.5f);
     body5Trans.setTranslation(new Vector3f(0.0f, 0.0f, -2.75f));
-    Transform3D body5Rot = new Transform3D();
-    body5Rot.rotX(Math.PI * 0.5f);
-    body5Trans.mul(body5Rot);
     TransformGroup body5Tg = new TransformGroup(body5Trans);
-    Cylinder body5 = new Cylinder(2.75f, 0.5f, body5App);
+    Cylinder body5 = new Cylinder(2.75f, 0.5f, bodyMetalApp);
     body5Tg.addChild(body5);
 
-    Appearance body6App = new Appearance();
-    body6App.setMaterial(bodyMetalMat);
     Transform3D body6Trans = new Transform3D();
     body6Trans.setTranslation(new Vector3f(0.0f, 6.2f, 4.5f));
     TransformGroup body6Tg = new TransformGroup(body6Trans);
-    Box body6 = new Box(3.5f, 0.25f, 2.0f, body6App);
+    Box body6 = new Box(3.5f, 0.25f, 2.0f, bodyMetalApp);
     body6Tg.addChild(body6);
 
     // cow plow
-    Appearance cowPlowApp = new Appearance();
-    cowPlowApp.setMaterial(bodyMetalMat);
     Transform3D cowPlowTrans = new Transform3D();
+    cowPlowTrans.rotY(Math.PI);
     cowPlowTrans.setScale(new Vector3d(7.5, 2.5, 2.0));
     cowPlowTrans.setTranslation(new Vector3f(3.75f, -4.5f, -2.95f));
-    Transform3D cowPlowRot = new Transform3D();
-    cowPlowRot.rotY(Math.PI);
-    cowPlowTrans.mul(cowPlowRot);
     TransformGroup cowPlowTg = new TransformGroup(cowPlowTrans);
     Shape3D cowPlow = createTrainCowPlowShape();
-    cowPlow.setAppearance(cowPlowApp);
+    cowPlow.setAppearance(bodyMetalApp);
     cowPlowTg.addChild(cowPlow);
 
     // chimney
-    Appearance chimneyApp = new Appearance();
-    chimneyApp.setMaterial(bodyMetalMat);
     Transform3D chimneyTrans = new Transform3D();
     chimneyTrans.setTranslation(new Vector3f(0.0f, 3.0f, -1.5f));
     TransformGroup chimneyTg = new TransformGroup(chimneyTrans);
-    Cylinder chimney = new Cylinder(0.5f, 3.0f, chimneyApp);
+    Cylinder chimney = new Cylinder(0.5f, 3.0f, bodyMetalApp);
     chimneyTg.addChild(chimney);
 
     // windows
@@ -345,14 +323,10 @@ public class Example3D extends JFrame {
     windowTrans.setTranslation(new Vector3f(0.0f, 3.5f, 4.5f));
     TransformGroup windowTg = new TransformGroup(windowTrans);
 
-    Appearance windowApp = new Appearance();
-    windowApp.setMaterial(windowMat);
     Box window = new Box(3.75f, 1.2f, 1.45f, windowApp);
     windowTg.addChild(window);
 
-    Appearance windowFrameApp = new Appearance();
-    windowFrameApp.setMaterial(bodyMetalMat);
-    Box windowFrame = new Box(3.65f, 1.35f, 1.55f, windowFrameApp);
+    Box windowFrame = new Box(3.65f, 1.35f, 1.55f, bodyMetalApp);
     windowTg.addChild(windowFrame);
 
     // add train parts
@@ -369,24 +343,24 @@ public class Example3D extends JFrame {
     // add wheels
     // large wheels
     trainTg.addChild(
-        createTrainWheel(new Vector3f(3.5f, -2.8f, 4.5f), 2.5f, wheelMetalMat, bodyMetalMat));
+        createTrainWheel(new Vector3f(3.5f, -2.8f, 4.5f), 2.5f, wheelMetalApp, bodyMetalApp));
     trainTg.addChild(
-        createTrainWheel(new Vector3f(-3.5f, -2.8f, 4.5f), 2.5f, wheelMetalMat, bodyMetalMat));
+        createTrainWheel(new Vector3f(-3.5f, -2.8f, 4.5f), 2.5f, wheelMetalApp, bodyMetalApp));
     // smaller wheels
     trainTg.addChild(
-        createTrainWheel(new Vector3f(3.5f, -4.0f, 0.8f), 1.25f, wheelMetalMat, bodyMetalMat));
+        createTrainWheel(new Vector3f(3.5f, -4.0f, 0.8f), 1.25f, wheelMetalApp, bodyMetalApp));
     trainTg.addChild(
-        createTrainWheel(new Vector3f(3.5f, -4.0f, -1.75f), 1.25f, wheelMetalMat, bodyMetalMat));
+        createTrainWheel(new Vector3f(3.5f, -4.0f, -1.75f), 1.25f, wheelMetalApp, bodyMetalApp));
     trainTg.addChild(
-        createTrainWheel(new Vector3f(-3.5f, -4.0f, 0.8f), 1.25f, wheelMetalMat, bodyMetalMat));
+        createTrainWheel(new Vector3f(-3.5f, -4.0f, 0.8f), 1.25f, wheelMetalApp, bodyMetalApp));
     trainTg.addChild(
-        createTrainWheel(new Vector3f(-3.5f, -4.0f, -1.75f), 1.25f, wheelMetalMat, bodyMetalMat));
+        createTrainWheel(new Vector3f(-3.5f, -4.0f, -1.75f), 1.25f, wheelMetalApp, bodyMetalApp));
 
     // add pistons
     trainTg.addChild(createTrainPiston(new Vector3f(3.55f, -4.0f, -0.475f),
-        new Vector3f(0.2f, 0.1f, 2.0f), wheelMetalMat));
+        new Vector3f(0.2f, 0.1f, 2.0f), bodyMetalApp));
     trainTg.addChild(createTrainPiston(new Vector3f(-3.55f, -4.0f, -0.475f),
-        new Vector3f(0.2f, 0.1f, 2.0f), wheelMetalMat));
+        new Vector3f(0.2f, 0.1f, 2.0f), bodyMetalApp));
 
     // add the train's group to the transform group to be animated so that the animation
     // is offset correctly and follows the tracks
@@ -406,33 +380,64 @@ public class Example3D extends JFrame {
   private BranchGroup createTrainTracks() {
     BranchGroup tracks = new BranchGroup();
 
-    // rail material
-    final Material railMat = new Material(new Color3f(0.5f, 0.5f, 0.5f), new Color3f(),
+    // rail materials
+    final Material railMetalMat = new Material(new Color3f(0.5f, 0.5f, 0.5f), new Color3f(),
         new Color3f(0.6f, 0.6f, 0.6f), new Color3f(1.0f, 1.0f, 1.0f), 30.0f);
+    final Material railWoodMat = new Material(new Color3f(0.43f, 0.22f, 0.08f), new Color3f(),
+        new Color3f(0.43f, 0.22f, 0.08f), new Color3f(), 0.0f);
+
+    // rail appearances
+    Appearance railMetalApp = new Appearance();
+    railMetalApp.setMaterial(railMetalMat);
+    Appearance railWoodApp = new Appearance();
+    railWoodApp.setMaterial(railWoodMat);
 
     // generate and add tracks
-    final int numRails = 80;
+    final int numRails = 60;
     for (int i = 0; i < numRails; ++i) {
       // create rail transform to position and rotate the rail properly
       final double mul = i / (double) numRails;
+      final Vector3d posMetalRail = new Vector3d(TRACK_RADIUS * Math.cos(2.0 * Math.PI * mul), -5.0,
+          TRACK_RADIUS * -Math.sin(2.0 * Math.PI * mul));
+      final Vector3d posWoodRailOffset = new Vector3d(3.0 * Math.cos(2.0 * Math.PI * mul), 0.0,
+          3.0 * -Math.sin(2.0 * Math.PI * mul));
 
-      TransformGroup rail = new TransformGroup();
-      Transform3D railTrans = new Transform3D();
-      railTrans.setTranslation(new Vector3d(TRACK_RADIUS * Math.cos(2.0 * Math.PI * mul), -5.0,
-          TRACK_RADIUS * -Math.sin(2.0 * Math.PI * mul)));
-      Transform3D railRot = new Transform3D();
-      railRot.rotY(2.0f * Math.PI * mul);
-      railTrans.mul(railRot);
-      rail.setTransform(railTrans);
+      // metal rails
+      TransformGroup railMetal = new TransformGroup();
+      Transform3D railMetalTrans = new Transform3D();
+      railMetalTrans.rotY(2.0f * Math.PI * mul);
+      railMetalTrans.setTranslation(posMetalRail);
+      railMetal.setTransform(railMetalTrans);
 
-      // create rail shape
-      Appearance railApp = new Appearance();
-      railApp.setMaterial(railMat);
-      Box railShape = new Box(4.0f, 0.25f, 0.25f, railApp);
+      Box railMetalShape = new Box(4.0f, 0.25f, 0.25f, railMetalApp);
 
-      // add to this rail's own group to be put on the tracks
-      rail.addChild(railShape);
-      tracks.addChild(rail);
+      // wooden rails
+      TransformGroup railWood1 = new TransformGroup();
+      Transform3D railWood1Trans = new Transform3D();
+      railWood1Trans.rotY(2.0f * Math.PI * mul + (Math.PI * 0.5f));
+      railWood1Trans.setTranslation(new Vector3d(posMetalRail.getX() + posWoodRailOffset.getX(),
+          posMetalRail.getY(), posMetalRail.getZ() + posWoodRailOffset.getZ()));
+      railWood1.setTransform(railWood1Trans);
+      Box railWood1Shape = new Box(4.0f, 0.25f, 0.25f, railWoodApp);
+
+      TransformGroup railWood2 = new TransformGroup();
+      Transform3D railWood2Trans = new Transform3D();
+      railWood2Trans.rotY(2.0f * Math.PI * mul + (Math.PI * 0.5f));
+      railWood2Trans.setTranslation(new Vector3d(posMetalRail.getX() - posWoodRailOffset.getX(),
+          posMetalRail.getY(), posMetalRail.getZ() - posWoodRailOffset.getZ()));
+      railWood2.setTransform(railWood2Trans);
+      Box railWood2Shape = new Box(4.0f, 0.25f, 0.25f, railWoodApp);
+
+
+      // add rail parts to transform group
+      railMetal.addChild(railMetalShape);
+      railWood1.addChild(railWood1Shape);
+      railWood2.addChild(railWood2Shape);
+
+      // add group to tracks
+      tracks.addChild(railMetal);
+      tracks.addChild(railWood1);
+      tracks.addChild(railWood2);
     }
 
     return tracks;
@@ -452,12 +457,10 @@ public class Example3D extends JFrame {
     // get and configure our view's transform a little...
     TransformGroup viewTransform = universe.getViewingPlatform().getViewPlatformTransform();
     Transform3D initialTrans = new Transform3D();
+    initialTrans.rotZ(Math.PI);
+    initialTrans.rotX(-Math.PI * 0.5);
     initialTrans.setScale(10.0);
-    initialTrans.setTranslation(new Vector3f(0.0f, 250.0f, 0.0f));
-    Transform3D initialRot = new Transform3D();
-    initialRot.rotZ(Math.PI);
-    initialRot.rotX(-Math.PI * 0.5);
-    initialTrans.mul(initialRot);
+    initialTrans.setTranslation(new Vector3f(0.0f, 150.0f, 0.0f));
     viewTransform.setTransform(initialTrans);
 
     // add the 3d environment to our scene
