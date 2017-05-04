@@ -72,6 +72,8 @@ public class Example3D extends JFrame {
       new TextureLoader(getClass().getResource("/wood.jpg"), this).getTexture();
   private Texture glassTex =
       new TextureLoader(getClass().getResource("/glass.jpg"), this).getTexture();
+  private Texture grassTex =
+      new TextureLoader(getClass().getResource("/grass.jpg"), this).getTexture();
 
   public Example3D() {
     // config frame
@@ -197,7 +199,7 @@ public class Example3D extends JFrame {
     final Point3f[] pistonInterpPositions = {new Point3f(0.0f, 0.75f, 0.0f),
         new Point3f(0.0f, -0.75f, 0.0f), new Point3f(0.0f, 0.75f, 0.0f)};
 
-    PositionPathInterpolator pistonInterper = new PositionPathInterpolator(new Alpha(-1, 105),
+    PositionPathInterpolator pistonInterper = new PositionPathInterpolator(new Alpha(-1, 95),
         pistonTg, new Transform3D(), pistonInterpKnots, pistonInterpPositions);
     pistonInterper.setSchedulingBounds(SCENE_BOUNDS);
 
@@ -394,9 +396,9 @@ public class Example3D extends JFrame {
 
     // add pistons
     trainTg.addChild(createTrainPiston(new Vector3f(3.55f, -4.0f, -0.475f),
-        new Vector3f(0.2f, 0.1f, 2.0f), bodyMetalApp));
+        new Vector3f(0.2f, 0.1f, 2.0f), wheelMetalApp));
     trainTg.addChild(createTrainPiston(new Vector3f(-3.55f, -4.0f, -0.475f),
-        new Vector3f(0.2f, 0.1f, 2.0f), bodyMetalApp));
+        new Vector3f(0.2f, 0.1f, 2.0f), wheelMetalApp));
 
     // add the train's group to the transform group to be animated so that the animation
     // is offset correctly and follows the tracks
@@ -484,7 +486,7 @@ public class Example3D extends JFrame {
     return tracks;
   }
 
-  private BranchGroup createTrainCollisionTest() {
+  private BranchGroup createTrainCollisionTestLight() {
     BranchGroup tester = new BranchGroup();
 
     // materials & appearances for the tester
@@ -558,12 +560,134 @@ public class Example3D extends JFrame {
     return tester;
   }
 
+  private BranchGroup createTrainCollisionTestBarrier() {
+    BranchGroup tester = new BranchGroup();
+
+    // materials & appearances for the tester
+    final Material metalMat = new Material(new Color3f(0.3f, 0.3f, 0.3f), new Color3f(),
+        new Color3f(0.3f, 0.3f, 0.3f), new Color3f(1.0f, 1.0f, 1.0f), 30.0f);
+
+    Appearance metalApp = new Appearance();
+    metalApp.setMaterial(metalMat);
+    metalApp.setTexture(metal2Tex);
+
+    Appearance barrierApp = new Appearance();
+    barrierApp.setMaterial(metalMat); // TODO
+    barrierApp.setTexture(metal1Tex); // TODO
+
+    Appearance collisionApp = new Appearance();
+    RenderingAttributes collisionRenderAttrib = new RenderingAttributes();
+    collisionRenderAttrib.setVisible(false);
+    collisionApp.setRenderingAttributes(collisionRenderAttrib);
+
+    // create the pole of the barrier
+    TransformGroup poleTg = new TransformGroup();
+    Transform3D poleTrans = new Transform3D();
+    poleTrans.setTranslation(new Vector3d(TRACK_RADIUS - 8.0, -2.0, 0.0));
+    poleTg.setTransform(poleTrans);
+    Cylinder pole = new Cylinder(0.5f, 8.0f,
+        Primitive.GENERATE_TEXTURE_COORDS | Primitive.GENERATE_NORMALS, metalApp);
+    poleTg.addChild(pole);
+
+    // create the pole top where the barrier will be
+    TransformGroup poleTopTg = new TransformGroup();
+    Transform3D poleTopTrans = new Transform3D();
+    poleTopTrans.setTranslation(new Vector3d(TRACK_RADIUS - 8.0, 2.5, 0.0));
+    poleTopTg.setTransform(poleTopTrans);
+    Box poleTop = new Box(0.75f, 0.75f, 0.75f,
+        Primitive.GENERATE_TEXTURE_COORDS | Primitive.GENERATE_NORMALS, metalApp);
+    poleTopTg.addChild(poleTop);
+
+    // create the pole barrier
+    TransformGroup barrierTg = new TransformGroup();
+    Transform3D barrierTrans = new Transform3D();
+    barrierTrans.setTranslation(new Vector3d(TRACK_RADIUS - 1.5, 2.5, 0.0));
+    barrierTg.setTransform(barrierTrans);
+    Box barrier = new Box(6.0f, 0.5f, 0.5f,
+        Primitive.GENERATE_TEXTURE_COORDS | Primitive.GENERATE_NORMALS, barrierApp);
+    barrier.setCollidable(false); // we will want to trigger the barrier using our collision volume
+    barrierTg.addChild(barrier);
+
+    // tg for the animation so that the origin of the rotation is correct
+    TransformGroup barrierAnimTg = new TransformGroup();
+    barrierAnimTg.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
+    barrierAnimTg.addChild(barrierTg);
+
+    Transform3D barrierRotAxis = new Transform3D();
+    barrierRotAxis.rotX(Math.PI * 0.5);
+    barrierRotAxis.setTranslation(new Vector3d(TRACK_RADIUS - 7.75, 2.5, 0.0));
+
+    // open & close anim interpolators for the barrier
+    // NOTE: these are given dummy Alphas as the TesterBarrierCollisionBehaviour is responsible for
+    // playing these
+    RotationInterpolator barrierOpenInterp =
+        new RotationInterpolator(new Alpha(0, 0), barrierAnimTg);
+    barrierOpenInterp.setEnable(false);
+    barrierOpenInterp.setTransformAxis(barrierRotAxis);
+    barrierOpenInterp.setSchedulingBounds(SCENE_BOUNDS);
+    barrierOpenInterp.setMinimumAngle(0.0f);
+    barrierOpenInterp.setMaximumAngle((float) Math.PI * 0.5f);
+
+    RotationInterpolator barrierCloseInterp =
+        new RotationInterpolator(new Alpha(0, 0), barrierAnimTg);
+    barrierCloseInterp.setEnable(false);
+    barrierCloseInterp.setTransformAxis(barrierRotAxis);
+    barrierCloseInterp.setSchedulingBounds(SCENE_BOUNDS);
+    barrierCloseInterp.setMinimumAngle((float) Math.PI * 0.5f);
+    barrierCloseInterp.setMaximumAngle(0.0f);
+
+    // create collision checking area
+    TransformGroup collisionTg = new TransformGroup();
+    Transform3D collisionTrans = new Transform3D();
+    collisionTrans.setTranslation(new Vector3d(TRACK_RADIUS, 1.0, 0.0));
+    collisionTg.setTransform(collisionTrans);
+    Box collision = new Box(3.0f, 1.0f, 2.0f, collisionApp);
+    collisionTg.addChild(collision);
+
+    // create the collision checking behaviour
+    TesterBarrierCollisionBehaviour collisionBehaviour = new TesterBarrierCollisionBehaviour(
+        barrierOpenInterp, barrierCloseInterp, collision, SCENE_BOUNDS);
+
+    // add tester parts and collision checking behaviour to group
+    tester.addChild(poleTg);
+    tester.addChild(poleTopTg);
+    tester.addChild(barrierAnimTg);
+    tester.addChild(collisionTg);
+    tester.addChild(barrierOpenInterp);
+    tester.addChild(barrierCloseInterp);
+    tester.addChild(collisionBehaviour);
+    return tester;
+  }
+
+  private BranchGroup createTerrain() {
+    BranchGroup terrain = new BranchGroup();
+
+    TransformGroup terrainBaseTg = new TransformGroup();
+    Transform3D terrainBaseTrans = new Transform3D();
+    terrainBaseTrans.setTranslation(new Vector3f(0.0f, -5.8f, 0.0f));
+    terrainBaseTg.setTransform(terrainBaseTrans);
+
+    // create terrain base to support the track
+    final Material grassMat = new Material(new Color3f(0.0f, 0.58f, 0.15f), new Color3f(),
+        new Color3f(0.0f, 0.58f, 0.15f), new Color3f(), 1.0f);
+    Appearance terrainApp = new Appearance();
+    terrainApp.setMaterial(grassMat);
+    terrainApp.setTexture(grassTex);
+    Cylinder terrainBase = new Cylinder((float) TRACK_RADIUS + 10.0f, 1.0f,
+        Primitive.GENERATE_TEXTURE_COORDS | Primitive.GENERATE_NORMALS, terrainApp);
+    terrainBaseTg.addChild(terrainBase);
+
+    terrain.addChild(terrainBaseTg);
+    return terrain;
+  }
+
   private void addEnvironmentToScene(BranchGroup sceneRoot) {
     // add different objects to scene
     sceneRoot.addChild(createSky());
     sceneRoot.addChild(createTrain());
     sceneRoot.addChild(createTrainTracks());
-    sceneRoot.addChild(createTrainCollisionTest());
+    sceneRoot.addChild(createTrainCollisionTestLight());
+    sceneRoot.addChild(createTrainCollisionTestBarrier());
     sceneRoot.addChild(createTerrain());
   }
 
@@ -574,10 +698,7 @@ public class Example3D extends JFrame {
     // get and configure our view's transform a little...
     TransformGroup viewTransform = universe.getViewingPlatform().getViewPlatformTransform();
     Transform3D initialTrans = new Transform3D();
-    // initialTrans.rotZ(Math.PI);
-    // initialTrans.rotX(-Math.PI * 0.5);
-    // initialTrans.setTranslation(new Vector3f(0.0f, 150.0f, 0.0f));
-    initialTrans.setTranslation(new Vector3d(0.0, 2.5, TRACK_RADIUS + 35.0));
+    initialTrans.setTranslation(new Vector3d(0.0, 3.5, TRACK_RADIUS + 50.0));
     initialTrans.setScale(10.0);
     viewTransform.setTransform(initialTrans);
 
