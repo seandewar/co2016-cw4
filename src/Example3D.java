@@ -41,7 +41,10 @@ public class Example3D extends JFrame {
 
   // a very large bounding sphere that is intended to contain the whole scene we will be making -
   // largely used for scheduling
-  private static final BoundingSphere LARGE_BOUNDS = new BoundingSphere(new Point3d(), 10000.0);
+  private static final BoundingSphere SCENE_BOUNDS = new BoundingSphere(new Point3d(), 10000.0);
+
+  // radius of the track
+  private static final double TRACK_RADIUS = 75.0;
 
   public static void main(String[] args) {
     new Example3D();
@@ -78,7 +81,7 @@ public class Example3D extends JFrame {
 
     // create a textured spherical sky (background)
     Background skyBg = new Background(new Color3f(0.7f, 1.0f, 1.0f));
-    skyBg.setApplicationBounds(LARGE_BOUNDS);
+    skyBg.setApplicationBounds(SCENE_BOUNDS);
 
     BranchGroup skyGeometry = new BranchGroup();
     Appearance skyApp = new Appearance();
@@ -92,12 +95,12 @@ public class Example3D extends JFrame {
 
     // create the sky light (ambient)
     AmbientLight skyLight = new AmbientLight(new Color3f(0.4f, 0.4f, 0.4f));
-    skyLight.setInfluencingBounds(LARGE_BOUNDS);
+    skyLight.setInfluencingBounds(SCENE_BOUNDS);
 
     // create the sun light (directional)
     DirectionalLight sunLight =
         new DirectionalLight(new Color3f(1.0f, 0.98f, 0.96f), new Vector3f(4.0f, -7.0f, -12.0f));
-    sunLight.setInfluencingBounds(LARGE_BOUNDS);
+    sunLight.setInfluencingBounds(SCENE_BOUNDS);
 
     // add sky parts to sky group
     sky.addChild(skyBg);
@@ -158,14 +161,14 @@ public class Example3D extends JFrame {
     pistonApp.setMaterial(mat);
     Box pistonShape = new Box(size.getX(), size.getY(), size.getZ(), pistonApp);
 
-    // create translation group for piston and then add piston to rotator group
+    // create translation group for piston and then add piston to anim group
     TransformGroup pistonPosTg = new TransformGroup();
     Transform3D pistonTrans = new Transform3D();
     pistonTrans.setTranslation(pos);
     pistonPosTg.setTransform(pistonTrans);
 
-    // add the translation group into the rotator group so that the rotator doesn't
-    // reset the position of the piston while rotating
+    // add the translation group into the anim group so that the anim doesn't
+    // reset the position of the piston while moving it
     pistonPosTg.addChild(pistonShape);
     pistonTg.addChild(pistonPosTg);
 
@@ -174,13 +177,13 @@ public class Example3D extends JFrame {
     final Point3f[] pistonInterpPositions = {new Point3f(0.0f, 0.75f, 0.0f),
         new Point3f(0.0f, -0.75f, 0.0f), new Point3f(0.0f, 0.75f, 0.0f)};
 
-    PositionPathInterpolator pistonRotator = new PositionPathInterpolator(new Alpha(-1, 125),
+    PositionPathInterpolator pistonInterper = new PositionPathInterpolator(new Alpha(-1, 125),
         pistonTg, new Transform3D(), pistonInterpKnots, pistonInterpPositions);
-    pistonRotator.setSchedulingBounds(LARGE_BOUNDS);
+    pistonInterper.setSchedulingBounds(SCENE_BOUNDS);
 
     // add transform group to piston group
     piston.addChild(pistonTg);
-    piston.addChild(pistonRotator);
+    piston.addChild(pistonInterper);
     return piston;
   }
 
@@ -223,7 +226,7 @@ public class Example3D extends JFrame {
     wheelRotatorAxis.rotZ(Math.PI * 0.5);
     wheelRotatorAxis.setTranslation(pos);
     wheelRotator.setTransformAxis(wheelRotatorAxis);
-    wheelRotator.setSchedulingBounds(LARGE_BOUNDS);
+    wheelRotator.setSchedulingBounds(SCENE_BOUNDS);
 
     // add wheel group and rotator to branch group
     wheel.addChild(wheelTg);
@@ -233,6 +236,18 @@ public class Example3D extends JFrame {
 
   private BranchGroup createTrain() {
     BranchGroup train = new BranchGroup();
+
+    // the group for the train's parts to be animated
+    TransformGroup trainTg = new TransformGroup();
+    Transform3D trainTrans = new Transform3D();
+    trainTrans.rotY(Math.PI * 0.5);
+    trainTrans.setTranslation(new Vector3d(0.0, 0.0, -TRACK_RADIUS));
+    trainTg.setTransform(trainTrans);
+
+    // the group for the train's animation to act upon; allows offset to be
+    // set properly so that the train follows the tracks
+    TransformGroup trainAnimTg = new TransformGroup();
+    trainAnimTg.setCapability(TransformGroup.ALLOW_TRANSFORM_WRITE);
 
     // train materials
     final Material bodyPaintMat = new Material(new Color3f(1.0f, 0.0f, 0.0f), new Color3f(),
@@ -341,44 +356,93 @@ public class Example3D extends JFrame {
     windowTg.addChild(windowFrame);
 
     // add train parts
-    train.addChild(body1Tg);
-    train.addChild(body2Tg);
-    train.addChild(body3Tg);
-    train.addChild(body4Tg);
-    train.addChild(body5Tg);
-    train.addChild(body6Tg);
-    train.addChild(cowPlowTg);
-    train.addChild(chimneyTg);
-    train.addChild(windowTg);
+    trainTg.addChild(body1Tg);
+    trainTg.addChild(body2Tg);
+    trainTg.addChild(body3Tg);
+    trainTg.addChild(body4Tg);
+    trainTg.addChild(body5Tg);
+    trainTg.addChild(body6Tg);
+    trainTg.addChild(cowPlowTg);
+    trainTg.addChild(chimneyTg);
+    trainTg.addChild(windowTg);
 
     // add wheels
     // large wheels
-    train.addChild(
+    trainTg.addChild(
         createTrainWheel(new Vector3f(3.5f, -2.8f, 4.5f), 2.5f, wheelMetalMat, bodyMetalMat));
-    train.addChild(
+    trainTg.addChild(
         createTrainWheel(new Vector3f(-3.5f, -2.8f, 4.5f), 2.5f, wheelMetalMat, bodyMetalMat));
     // smaller wheels
-    train.addChild(
+    trainTg.addChild(
         createTrainWheel(new Vector3f(3.5f, -4.0f, 0.8f), 1.25f, wheelMetalMat, bodyMetalMat));
-    train.addChild(
+    trainTg.addChild(
         createTrainWheel(new Vector3f(3.5f, -4.0f, -1.75f), 1.25f, wheelMetalMat, bodyMetalMat));
-    train.addChild(
+    trainTg.addChild(
         createTrainWheel(new Vector3f(-3.5f, -4.0f, 0.8f), 1.25f, wheelMetalMat, bodyMetalMat));
-    train.addChild(
+    trainTg.addChild(
         createTrainWheel(new Vector3f(-3.5f, -4.0f, -1.75f), 1.25f, wheelMetalMat, bodyMetalMat));
 
     // add pistons
-    train.addChild(createTrainPiston(new Vector3f(3.55f, -4.0f, -0.475f),
+    trainTg.addChild(createTrainPiston(new Vector3f(3.55f, -4.0f, -0.475f),
         new Vector3f(0.2f, 0.1f, 2.0f), wheelMetalMat));
-    train.addChild(createTrainPiston(new Vector3f(-3.55f, -4.0f, -0.475f),
+    trainTg.addChild(createTrainPiston(new Vector3f(-3.55f, -4.0f, -0.475f),
         new Vector3f(0.2f, 0.1f, 2.0f), wheelMetalMat));
+
+    // add the train's group to the transform group to be animated so that the animation
+    // is offset correctly and follows the tracks
+    trainAnimTg.addChild(trainTg);
+
+    // train moving animation
+    RotationInterpolator rotator =
+        new RotationInterpolator(new Alpha(-1, (long) (7250 * TRACK_RADIUS / 75.0)), trainAnimTg);
+    rotator.setSchedulingBounds(SCENE_BOUNDS);
+
+    // add train and movement animator to group
+    train.addChild(trainAnimTg);
+    train.addChild(rotator);
     return train;
+  }
+
+  private BranchGroup createTrainTracks() {
+    BranchGroup tracks = new BranchGroup();
+
+    // rail material
+    final Material railMat = new Material(new Color3f(0.5f, 0.5f, 0.5f), new Color3f(),
+        new Color3f(0.6f, 0.6f, 0.6f), new Color3f(1.0f, 1.0f, 1.0f), 30.0f);
+
+    // generate and add tracks
+    final int numRails = 80;
+    for (int i = 0; i < numRails; ++i) {
+      // create rail transform to position and rotate the rail properly
+      final double mul = i / (double) numRails;
+
+      TransformGroup rail = new TransformGroup();
+      Transform3D railTrans = new Transform3D();
+      railTrans.setTranslation(new Vector3d(TRACK_RADIUS * Math.cos(2.0 * Math.PI * mul), -5.0,
+          TRACK_RADIUS * -Math.sin(2.0 * Math.PI * mul)));
+      Transform3D railRot = new Transform3D();
+      railRot.rotY(2.0f * Math.PI * mul);
+      railTrans.mul(railRot);
+      rail.setTransform(railTrans);
+
+      // create rail shape
+      Appearance railApp = new Appearance();
+      railApp.setMaterial(railMat);
+      Box railShape = new Box(4.0f, 0.25f, 0.25f, railApp);
+
+      // add to this rail's own group to be put on the tracks
+      rail.addChild(railShape);
+      tracks.addChild(rail);
+    }
+
+    return tracks;
   }
 
   private void addEnvironmentToScene(BranchGroup sceneRoot) {
     // add different objects to scene
     sceneRoot.addChild(createSky());
     sceneRoot.addChild(createTrain());
+    sceneRoot.addChild(createTrainTracks());
   }
 
   private BranchGroup createScene() {
@@ -389,9 +453,10 @@ public class Example3D extends JFrame {
     TransformGroup viewTransform = universe.getViewingPlatform().getViewPlatformTransform();
     Transform3D initialTrans = new Transform3D();
     initialTrans.setScale(10.0);
-    initialTrans.setTranslation(new Vector3f(50.0f, 0.0f, 0.0f));
+    initialTrans.setTranslation(new Vector3f(0.0f, 250.0f, 0.0f));
     Transform3D initialRot = new Transform3D();
-    initialRot.rotY(Math.PI * 0.5f);
+    initialRot.rotZ(Math.PI);
+    initialRot.rotX(-Math.PI * 0.5);
     initialTrans.mul(initialRot);
     viewTransform.setTransform(initialTrans);
 
@@ -400,17 +465,17 @@ public class Example3D extends JFrame {
 
     // create mouse behaviours so we can interact with the scene a bit
     MouseRotate rotBehaviour = new MouseRotate(viewTransform);
-    rotBehaviour.setSchedulingBounds(LARGE_BOUNDS);
+    rotBehaviour.setSchedulingBounds(SCENE_BOUNDS);
     rotBehaviour.setFactor(0.005);
     sceneRoot.addChild(rotBehaviour);
 
     MouseTranslate transBehaviour = new MouseTranslate(viewTransform);
-    transBehaviour.setSchedulingBounds(LARGE_BOUNDS);
+    transBehaviour.setSchedulingBounds(SCENE_BOUNDS);
     transBehaviour.setFactor(0.05);
     sceneRoot.addChild(transBehaviour);
 
     MouseWheelZoom zoomBehaviour = new MouseWheelZoom(viewTransform);
-    zoomBehaviour.setSchedulingBounds(LARGE_BOUNDS);
+    zoomBehaviour.setSchedulingBounds(SCENE_BOUNDS);
     zoomBehaviour.setFactor(2.0);
     sceneRoot.addChild(zoomBehaviour);
 
